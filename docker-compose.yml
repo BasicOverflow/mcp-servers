@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build: .
+    container_name: mcp-server
+    volumes:
+      - ./data:/app/data
+    environment:
+      - VAULT_PATH=${VAULT_PATH:-/app/data}
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+

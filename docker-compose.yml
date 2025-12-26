@@ -3,7 +3,7 @@ services:
     build: .
     container_name: notes-mcp-server
     ports:
-      - "8000:8000"
+      - "8083:8000"
     volumes:
       - /home/peter/syncthing/obsidian/Homelab:/app/vault:rw
     environment:

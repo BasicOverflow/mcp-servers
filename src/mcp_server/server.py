@@ -23,7 +23,7 @@ async def _get_tools_list() -> list[Tool]:
     return [
         # Core File Operations
         Tool(
-            name="read_file",
+            name="read_obsidian_file",
             description="Read file content. Automatically handles .md extension if missing.",
             inputSchema={
                 "type": "object",
@@ -37,7 +37,7 @@ async def _get_tools_list() -> list[Tool]:
             }
         ),
         Tool(
-            name="write_file",
+            name="write_obsidian_file",
             description="Write or overwrite file content. Creates parent directories if needed.",
             inputSchema={
                 "type": "object",
@@ -55,7 +55,7 @@ async def _get_tools_list() -> list[Tool]:
             }
         ),
         Tool(
-            name="delete_file",
+            name="delete_obsidian_file",
             description="Delete a file or directory.",
             inputSchema={
                 "type": "object",
@@ -69,7 +69,7 @@ async def _get_tools_list() -> list[Tool]:
             }
         ),
         Tool(
-            name="move_file",
+            name="move_obsidian_file",
             description="Move or rename a file or directory.",
             inputSchema={
                 "type": "object",
@@ -87,7 +87,7 @@ async def _get_tools_list() -> list[Tool]:
             }
         ),
         Tool(
-            name="copy_file",
+            name="copy_obsidian_file",
             description="Copy a file or directory.",
             inputSchema={
                 "type": "object",
@@ -105,7 +105,7 @@ async def _get_tools_list() -> list[Tool]:
             }
         ),
         Tool(
-            name="create_directory",
+            name="create_obsidian_directory",
             description="Create a new directory. Creates parent directories if needed.",
             inputSchema={
                 "type": "object",
@@ -119,7 +119,7 @@ async def _get_tools_list() -> list[Tool]:
             }
         ),
         Tool(
-            name="list_directory",
+            name="list_obsidian_directory",
             description="List files and subdirectories in a directory.",
             inputSchema={
                 "type": "object",
@@ -134,7 +134,7 @@ async def _get_tools_list() -> list[Tool]:
         ),
         # Search Capabilities
         Tool(
-            name="search_files",
+            name="search_obsidian_files",
             description="Search for files by name/pattern. Supports glob patterns and regex.",
             inputSchema={
                 "type": "object",
@@ -157,7 +157,7 @@ async def _get_tools_list() -> list[Tool]:
             }
         ),
         Tool(
-            name="search_content",
+            name="search_obsidian_content",
             description="Search file contents (grep-like). Returns matching files with context lines.",
             inputSchema={
                 "type": "object",
@@ -181,7 +181,7 @@ async def _get_tools_list() -> list[Tool]:
         ),
         # Batch Operations
         Tool(
-            name="read_multiple_files",
+            name="read_multiple_obsidian_files",
             description="Read multiple files at once. Returns dict of path:content.",
             inputSchema={
                 "type": "object",
@@ -196,7 +196,7 @@ async def _get_tools_list() -> list[Tool]:
             }
         ),
         Tool(
-            name="write_multiple_files",
+            name="write_multiple_obsidian_files",
             description="Write multiple files at once.",
             inputSchema={
                 "type": "object",
@@ -224,7 +224,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     """Handle tool calls."""
     
     # Core File Operations
-    if name == "read_file":
+    if name == "read_obsidian_file":
         path = resolve_path(arguments["path"])
         if not path.exists():
             raise ValueError(f"File not found: {arguments['path']}")
@@ -233,13 +233,13 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         content = path.read_text(encoding="utf-8")
         return [TextContent(type="text", text=content)]
     
-    elif name == "write_file":
+    elif name == "write_obsidian_file":
         path = resolve_path(arguments["path"])
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(arguments["content"], encoding="utf-8")
         return [TextContent(type="text", text=f"File written: {path.relative_to(vault_root)}")]
     
-    elif name == "delete_file":
+    elif name == "delete_obsidian_file":
         path = resolve_path(arguments["path"], normalize=False)
         if not path.exists():
             raise ValueError(f"Path not found: {arguments['path']}")
@@ -251,7 +251,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             raise ValueError(f"Path is neither file nor directory: {arguments['path']}")
         return [TextContent(type="text", text=f"Deleted: {path.relative_to(vault_root)}")]
     
-    elif name == "move_file":
+    elif name == "move_obsidian_file":
         source = resolve_path(arguments["source"], normalize=False)
         dest = resolve_path(arguments["destination"], normalize=False)
         if not source.exists():
@@ -260,7 +260,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         shutil.move(str(source), str(dest))
         return [TextContent(type="text", text=f"Moved {source.relative_to(vault_root)} to {dest.relative_to(vault_root)}")]
     
-    elif name == "copy_file":
+    elif name == "copy_obsidian_file":
         source = resolve_path(arguments["source"], normalize=False)
         dest = resolve_path(arguments["destination"], normalize=False)
         if not source.exists():
@@ -274,12 +274,12 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             raise ValueError(f"Source is neither file nor directory: {arguments['source']}")
         return [TextContent(type="text", text=f"Copied {source.relative_to(vault_root)} to {dest.relative_to(vault_root)}")]
     
-    elif name == "create_directory":
+    elif name == "create_obsidian_directory":
         path = resolve_path(arguments["path"], normalize=False)
         path.mkdir(parents=True, exist_ok=True)
         return [TextContent(type="text", text=f"Directory created: {path.relative_to(vault_root)}")]
     
-    elif name == "list_directory":
+    elif name == "list_obsidian_directory":
         path_str = arguments.get("path", "")
         if path_str:
             path = resolve_path(path_str, normalize=False)
@@ -303,7 +303,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         return [TextContent(type="text", text=json.dumps(items, indent=2))]
     
     # Search Capabilities
-    elif name == "search_files":
+    elif name == "search_obsidian_files":
         pattern = arguments["pattern"]
         use_regex = arguments.get("use_regex", False)
         search_path_str = arguments.get("path", "")
@@ -329,7 +329,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         
         return [TextContent(type="text", text=json.dumps(sorted(matches), indent=2))]
     
-    elif name == "search_content":
+    elif name == "search_obsidian_content":
         query = arguments["query"]
         context_lines = arguments.get("context_lines", 2)
         search_path_str = arguments.get("path", "")
@@ -371,7 +371,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         return [TextContent(type="text", text=json.dumps(matches, indent=2))]
     
     # Batch Operations
-    elif name == "read_multiple_files":
+    elif name == "read_multiple_obsidian_files":
         paths = arguments["paths"]
         results = {}
         errors = []
@@ -392,7 +392,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         
         return [TextContent(type="text", text=json.dumps(result, indent=2))]
     
-    elif name == "write_multiple_files":
+    elif name == "write_multiple_obsidian_files":
         files = arguments["files"]
         results = []
         errors = []

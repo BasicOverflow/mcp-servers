@@ -2,6 +2,7 @@
 - name: Pull Git Changes and Restart Docker Compose
   hosts: insights-host
   become: yes
+  become_user: peter
   vars:
     repo_url: "{{ GITHUB_REPO_URL }}"
     branch: "{{ GITHUB_BRANCH }}"

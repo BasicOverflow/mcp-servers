@@ -1,0 +1,35 @@
+---
+- name: Pull Git Changes and Restart Docker Compose
+  hosts: insights-host
+  become: yes
+  vars:
+    repo_url: "{{ GITHUB_REPO_URL }}"
+    branch: "{{ GITHUB_BRANCH }}"
+    deploy_dir: "{{ DEPLOY_DIR }}"
+
+  tasks:
+    - name: Get current commit hash
+      shell: cd {{ deploy_dir }} && git rev-parse HEAD
+      register: commit_before
+      changed_when: false
+
+    - name: Pull latest changes from Git
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ deploy_dir }}"
+        version: "{{ branch }}"
+        update: yes
+
+    - name: Get commit hash after pull
+      shell: cd {{ deploy_dir }} && git rev-parse HEAD
+      register: commit_after
+      changed_when: false
+
+    - name: Restart Docker Compose if changes detected
+      when: commit_before.stdout != commit_after.stdout
+      shell: cd {{ deploy_dir }} && docker compose restart
+
+    - name: Restart Docker Compose if no previous commit (first run)
+      when: commit_before.stdout == ""
+      shell: cd {{ deploy_dir }} && docker compose restart
+

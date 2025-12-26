@@ -9,9 +9,12 @@
 
   tasks:
     - name: Get current commit hash
-      shell: cd {{ deploy_dir }} && git rev-parse HEAD
+      shell: git rev-parse HEAD
+      args:
+        chdir: "{{ deploy_dir }}"
       register: commit_before
       changed_when: false
+      ignore_errors: true
 
     - name: Pull latest changes from Git
       git:
@@ -21,15 +24,21 @@
         update: yes
 
     - name: Get commit hash after pull
-      shell: cd {{ deploy_dir }} && git rev-parse HEAD
+      shell: git rev-parse HEAD
+      args:
+        chdir: "{{ deploy_dir }}"
       register: commit_after
       changed_when: false
 
     - name: Restart Docker Compose if changes detected
       when: commit_before.stdout != commit_after.stdout
-      shell: cd {{ deploy_dir }} && docker compose restart
+      shell: docker compose restart
+      args:
+        chdir: "{{ deploy_dir }}"
 
     - name: Restart Docker Compose if no previous commit (first run)
-      when: commit_before.stdout == ""
-      shell: cd {{ deploy_dir }} && docker compose restart
+      when: commit_before.stdout == "" or commit_before.rc != 0
+      shell: docker compose restart
+      args:
+        chdir: "{{ deploy_dir }}"
 

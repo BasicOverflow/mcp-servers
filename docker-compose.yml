@@ -2,6 +2,7 @@ services:
   notes-mcp-server:
     build: .
     container_name: notes-mcp-server
+    user: "568:568"
     ports:
       - "8083:8000"
     volumes:
@@ -11,4 +12,5 @@ services:
       - HOST=${HOST:-0.0.0.0}
       - PORT=${PORT:-8000}
     restart: unless-stopped
+
 

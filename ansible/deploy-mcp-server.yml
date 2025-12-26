@@ -9,6 +9,10 @@
     deploy_dir: "{{ DEPLOY_DIR }}"
 
   tasks:
+    - name: Configure Git safe directory
+      shell: git config --global --add safe.directory "{{ deploy_dir }}"
+      changed_when: false
+
     - name: Get current commit hash
       shell: git rev-parse HEAD
       args:

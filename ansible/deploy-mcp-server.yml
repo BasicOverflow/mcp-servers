@@ -1,5 +1,5 @@
 ---
-- name: Pull Git Changes and Restart Docker Compose
+- name: Pull Git Changes and Restart Docker Compose 
   hosts: insights-host
   become: yes
   become_user: peter

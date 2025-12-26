@@ -9,6 +9,14 @@
     deploy_dir: "{{ DEPLOY_DIR }}"
 
   tasks:
+    - name: Fix ownership of deploy directory
+      file:
+        path: "{{ deploy_dir }}"
+        owner: peter
+        group: peter
+        recurse: true
+      become_user: root
+
     - name: Configure Git safe directory
       shell: git config --global --add safe.directory "{{ deploy_dir }}"
       changed_when: false

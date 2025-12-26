@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 from mcp.types import JSONRPCRequest
 
-from .server import app as mcp_app, _get_tools_list, call_tool
+from .server import app as mcp_app, _get_tools_list, call_tool, _get_resources_list, read_resource
 
 
 http_app = FastAPI(title="Notes MCP Server", version="1.0.0")
@@ -178,15 +178,77 @@ class MCPSession:
                     }
                 }
             
-            # Handle resources/list (required by Cursor)
+            # Handle resources/list
             if method == "resources/list":
+                resources = await _get_resources_list()
+                resources_data = []
+                for resource in resources:
+                    try:
+                        if hasattr(resource, "model_dump"):
+                            resource_dict = resource.model_dump(exclude_none=True)
+                        elif hasattr(resource, "dict"):
+                            resource_dict = resource.dict(exclude_none=True)
+                        else:
+                            resource_dict = {
+                                "uri": resource.uri,
+                                "name": resource.name,
+                                "description": resource.description,
+                                "mimeType": getattr(resource, "mimeType", None)
+                            }
+                        resources_data.append(resource_dict)
+                    except Exception:
+                        resources_data.append({
+                            "uri": resource.uri,
+                            "name": resource.name,
+                            "description": resource.description,
+                            "mimeType": getattr(resource, "mimeType", None)
+                        })
+                
                 return {
                     "jsonrpc": "2.0",
                     "id": request_id,
                     "result": {
-                        "resources": []
+                        "resources": resources_data
                     }
                 }
+            
+            # Handle resources/read
+            if method == "resources/read":
+                resource_uri = params.get("uri")
+                if not resource_uri:
+                    return {
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "error": {
+                            "code": -32602,
+                            "message": "Missing required parameter: uri"
+                        }
+                    }
+                
+                try:
+                    content = await read_resource(resource_uri)
+                    return {
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "result": {
+                            "contents": [
+                                {
+                                    "uri": resource_uri,
+                                    "mimeType": "text/markdown" if resource_uri.startswith("obsidian://file/") else "application/json",
+                                    "text": content
+                                }
+                            ]
+                        }
+                    }
+                except ValueError as e:
+                    return {
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "error": {
+                            "code": -32602,
+                            "message": str(e)
+                        }
+                    }
             
             # Handle initialized notification
             if method == "initialized":

@@ -9,7 +9,7 @@ import shutil
 from pathlib import Path
 
 from mcp.server import Server
-from mcp.types import Tool, TextContent
+from mcp.types import Tool, TextContent, Resource
 
 from .file_ops import get_vault_root, resolve_path
 
@@ -217,6 +217,85 @@ async def _get_tools_list() -> list[Tool]:
 async def list_tools() -> list[Tool]:
     """List available tools."""
     return await _get_tools_list()
+
+
+async def _get_resources_list() -> list[Resource]:
+    """Get the list of available resources (internal helper)."""
+    resources = []
+    
+    # Add all markdown files in vault as resources
+    for file_path in vault_root.rglob("*.md"):
+        if file_path.is_file():
+            rel_path = file_path.relative_to(vault_root)
+            uri = f"obsidian://file/{rel_path.as_posix()}"
+            resources.append(Resource(
+                uri=uri,
+                name=str(rel_path),
+                description=f"Obsidian note: {rel_path}",
+                mimeType="text/markdown"
+            ))
+    
+    # Add directories as resources (for listing)
+    for dir_path in vault_root.rglob("*"):
+        if dir_path.is_dir():
+            rel_path = dir_path.relative_to(vault_root)
+            uri = f"obsidian://directory/{rel_path.as_posix()}" if str(rel_path) != "." else "obsidian://directory/"
+            resources.append(Resource(
+                uri=uri,
+                name=f"Directory: {rel_path}" if str(rel_path) != "." else "Vault Root",
+                description=f"Directory listing: {rel_path}",
+                mimeType="application/json"
+            ))
+    
+    return resources
+
+
+@app.list_resources()
+async def list_resources() -> list[Resource]:
+    """List available resources."""
+    return await _get_resources_list()
+
+
+@app.read_resource()
+async def read_resource(uri: str) -> str:
+    """Read a resource by URI."""
+    if uri.startswith("obsidian://file/"):
+        # Extract file path
+        file_path_str = uri.replace("obsidian://file/", "")
+        path = resolve_path(file_path_str)
+        if not path.exists():
+            raise ValueError(f"File not found: {file_path_str}")
+        if not path.is_file():
+            raise ValueError(f"Path is not a file: {file_path_str}")
+        return path.read_text(encoding="utf-8")
+    
+    elif uri.startswith("obsidian://directory/"):
+        # Extract directory path
+        dir_path_str = uri.replace("obsidian://directory/", "")
+        if not dir_path_str or dir_path_str == ".":
+            path = vault_root
+        else:
+            path = resolve_path(dir_path_str, normalize=False)
+        
+        if not path.exists():
+            raise ValueError(f"Directory not found: {dir_path_str or 'root'}")
+        if not path.is_dir():
+            raise ValueError(f"Path is not a directory: {dir_path_str or 'root'}")
+        
+        items = []
+        for item in sorted(path.iterdir()):
+            rel_path = item.relative_to(vault_root)
+            item_info = {
+                "path": str(rel_path),
+                "type": "directory" if item.is_dir() else "file",
+                "size": item.stat().st_size if item.is_file() else None
+            }
+            items.append(item_info)
+        
+        return json.dumps(items, indent=2)
+    
+    else:
+        raise ValueError(f"Unknown resource URI scheme: {uri}")
 
 
 @app.call_tool()

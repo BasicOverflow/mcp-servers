@@ -5,7 +5,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./vault:/app/vault:rw
+      - /home/peter/syncthing/obsidian/Homelab:/app/vault:rw
     environment:
       - VAULT_PATH=${VAULT_PATH:-/app/vault}
       - HOST=${HOST:-0.0.0.0}

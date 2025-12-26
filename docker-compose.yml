@@ -1,14 +1,14 @@
-version: '3.8'
-
 services:
-  mcp-server:
+  notes-mcp-server:
     build: .
-    container_name: mcp-server
+    container_name: notes-mcp-server
+    ports:
+      - "8000:8000"
     volumes:
-      - ./data:/app/data
+      - ./vault:/app/vault:rw
     environment:
-      - VAULT_PATH=${VAULT_PATH:-/app/data}
+      - VAULT_PATH=${VAULT_PATH:-/app/vault}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-8000}
     restart: unless-stopped
-    stdin_open: true
-    tty: true
 

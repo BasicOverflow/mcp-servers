@@ -208,3 +208,6 @@ __marimo__/
 
 # Homelab
 Homelab/
+
+# Local test vault (git-ignored)
+vault/

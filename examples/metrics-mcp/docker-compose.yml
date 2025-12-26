@@ -1,0 +1,13 @@
+services:
+  metrics-mcp-server:
+    build: .
+    container_name: metrics-mcp-server
+    user: "568:568"
+    ports:
+      - "8084:8000"
+    environment:
+      - PROMETHEUS_URL=${PROMETHEUS_URL:-http://10.0.121.218:9090}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-8000}
+    restart: unless-stopped
+

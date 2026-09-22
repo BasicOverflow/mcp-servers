@@ -50,8 +50,3 @@ Optional Docker (profile-gated so it will not start by accident):
 ```bash
 docker compose --profile showcase up --build
 ```
-
-## Do not
-
-- Add this to Cursor MCP on machines that should only talk to Metrics MCP  
-- Deploy to `10.0.121.218` or restore Notes MCP on `:8083` in the lab  

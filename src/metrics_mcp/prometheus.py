@@ -10,7 +10,7 @@ from urllib.parse import quote
 
 import httpx
 
-DEFAULT_URL = os.getenv("PROMETHEUS_URL", "http://10.0.121.218:9090")
+DEFAULT_URL = os.getenv("PROMETHEUS_URL", "http://127.0.0.1:9090")
 TIMEOUT = float(os.getenv("PROMETHEUS_TIMEOUT", "30"))
 
 

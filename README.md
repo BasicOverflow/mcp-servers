@@ -1,16 +1,16 @@
 # Metrics MCP
 
-LLM-facing Model Context Protocol server for the homelab Prometheus stack on **insights-host**.
+Prometheus analysis MCP for LLM agents. Built with **MCP Python SDK v2** (Streamable HTTP).
 
-Implements **MCP Python SDK v2** (`mcp>=2.0`) with **Streamable HTTP** (stateless + JSON responses) per the current MCP transport model.
+Point it at any Prometheus with `PROMETHEUS_URL`. Includes query helpers, stats/trends/anomalies, capacity forecasts, and optional PromQL recipes for common node / PVE / ZFS exporters.
 
 ## Endpoint
 
 | | |
 |---|---|
-| Host | insights-host `10.0.121.218` |
-| URL | `http://10.0.121.218:8084/mcp` |
-| Prometheus | `http://10.0.121.218:9090` (env `PROMETHEUS_URL`) |
+| MCP | `http://127.0.0.1:8000/mcp` (default) |
+| Health | `http://127.0.0.1:8000/health` |
+| Prometheus | env `PROMETHEUS_URL` (default `http://127.0.0.1:9090`) |
 
 ## Tools
 
@@ -27,16 +27,16 @@ Implements **MCP Python SDK v2** (`mcp>=2.0`) with **Streamable HTTP** (stateles
 | `detect_anomalies` | Z-score outliers |
 | `correlate_metrics` | Pearson correlation |
 | `capacity_forecast` | ETA to absolute threshold |
-| `suggest_queries` / `list_recipes` / `run_recipe` | Homelab-aware PromQL recipes |
+| `suggest_queries` / `list_recipes` / `run_recipe` | Built-in PromQL recipes |
 | `down_targets` | Targets that are down or errored |
 | `zfs_pool_summary` | Pool alloc/free/used% |
 | `infra_overview` | One-shot health snapshot |
-| `compare_hosts` | CPU/mem/load/disk across Proxmox nodes |
+| `compare_hosts` | CPU/mem/load/disk across nodes |
 | `top_guests` | Hottest QEMU/LXC by CPU or memory |
 
 ## Resources
 
-- `metrics://stack` — scrape topology notes
+- `metrics://stack` — expected scrape job notes
 - `metrics://recipes` — recipe index
 - `metrics://recipes/{id}` — single recipe
 
@@ -46,33 +46,29 @@ Implements **MCP Python SDK v2** (`mcp>=2.0`) with **Streamable HTTP** (stateles
 - `capacity_review`
 - `explain_metric`
 
-## Local run
+## Run
 
 ```bash
 pip install -r requirements.txt
 set PYTHONPATH=src
-set PROMETHEUS_URL=http://10.0.121.218:9090
+set PROMETHEUS_URL=http://127.0.0.1:9090
 python -m metrics_mcp
 ```
-
-## Docker (insights-host)
 
 ```bash
 docker compose up -d --build
 ```
 
-Maps host **8084** → container **8000**.
+Default compose maps host **8084** → container **8000**.
 
-## Cursor / client config (example)
+## Client config
 
 ```json
 {
   "mcpServers": {
     "metrics": {
-      "url": "http://10.0.121.218:8084/mcp"
+      "url": "http://127.0.0.1:8084/mcp"
     }
   }
 }
 ```
-
-(Exact client key names vary by host; use Streamable HTTP / remote MCP URL support.)

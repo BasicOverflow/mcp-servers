@@ -1,6 +1,6 @@
 """Metrics MCP server (MCP Python SDK v2 — Streamable HTTP).
 
-Exposes Prometheus query + analysis tools for the homelab insights-host stack.
+Prometheus query + analysis tools for LLM agents.
 """
 
 from __future__ import annotations
@@ -19,12 +19,11 @@ from . import analysis as A
 from .prometheus import prom
 from .recipes import RECIPES, suggest_for_task
 
-# Allow LAN Host headers (required when not binding only to localhost).
 _ALLOWED_HOSTS = [
     h.strip()
     for h in os.getenv(
         "MCP_ALLOWED_HOSTS",
-        "10.0.121.218,10.0.121.218:*,127.0.0.1,127.0.0.1:*,localhost,localhost:*",
+        "127.0.0.1,127.0.0.1:*,localhost,localhost:*",
     ).split(",")
     if h.strip()
 ]
@@ -32,7 +31,7 @@ _ALLOWED_ORIGINS = [
     o.strip()
     for o in os.getenv(
         "MCP_ALLOWED_ORIGINS",
-        "http://10.0.121.218:*,http://127.0.0.1:*,http://localhost:*",
+        "http://127.0.0.1:*,http://localhost:*",
     ).split(",")
     if o.strip()
 ]
@@ -41,9 +40,9 @@ mcp = MCPServer(
     "metrics-mcp",
     version=__version__,
     instructions=(
-        "Homelab Prometheus analysis MCP for insights-host. "
-        "Prefer infra_overview / list_targets first, then recipes or PromQL tools. "
-        "Guest VMs are not scraped; use PVE guest metrics and Proxmox node_exporter."
+        "Prometheus analysis MCP. Prefer infra_overview / list_targets first, "
+        "then recipes or PromQL tools. Recipes assume common job labels "
+        "(node, proxmox-*, truenas, truenas-zfs) when those exporters exist."
     ),
 )
 
@@ -250,13 +249,13 @@ async def capacity_forecast(
 
 @mcp.tool()
 async def suggest_queries(task: str) -> str:
-    """Suggest PromQL recipes for this homelab stack from a natural-language task."""
+    """Suggest PromQL recipes from a natural-language task."""
     return _j({"task": task, "suggestions": suggest_for_task(task)})
 
 
 @mcp.tool()
 async def list_recipes() -> str:
-    """List built-in PromQL recipes tuned for insights-host exporters."""
+    """List built-in PromQL recipes (node / PVE / ZFS-oriented)."""
     return _j({"recipes": [{"id": k, **v} for k, v in RECIPES.items()]})
 
 
@@ -323,7 +322,7 @@ async def down_targets() -> str:
 
 @mcp.tool()
 async def zfs_pool_summary() -> str:
-    """ZFS pool alloc/free/used% from zfsprom_* (TrueNAS exporter)."""
+    """ZFS pool alloc/free/used% from zfsprom_* metrics."""
     try:
         def _pool_key(labels: dict[str, str]) -> tuple[str, ...]:
             return (
@@ -367,7 +366,7 @@ async def zfs_pool_summary() -> str:
 
 @mcp.tool()
 async def infra_overview() -> str:
-    """Homelab health snapshot: targets, node CPU/mem, guest counts, ZFS pools."""
+    """Health snapshot: targets, node CPU/mem, guest counts, ZFS pools."""
     try:
         targets = await prom.targets()
         active = targets.get("activeTargets", [])
@@ -414,7 +413,7 @@ async def infra_overview() -> str:
 
 @mcp.tool()
 async def compare_hosts(metric: str = "cpu", time_range: str = "1h") -> str:
-    """Compare Proxmox hosts for cpu|memory|load|disk over a time range."""
+    """Compare hosts for cpu|memory|load|disk over a time range (job=node)."""
     queries = {
         "cpu": '100 * (1 - avg by (host) (rate(node_cpu_seconds_total{job="node",mode="idle"}[5m])))',
         "memory": '100 * (1 - avg by (host) (node_memory_MemAvailable_bytes{job="node"} / node_memory_MemTotal_bytes{job="node"}))',
@@ -486,7 +485,7 @@ async def top_guests(resource: str = "cpu", limit: int = 10) -> str:
 
 @mcp.resource("metrics://recipes")
 def recipes_index() -> str:
-    """Index of built-in PromQL recipes for this homelab."""
+    """Index of built-in PromQL recipes."""
     return _j([{"id": k, **v} for k, v in RECIPES.items()])
 
 
@@ -500,17 +499,17 @@ def recipe_detail(recipe_id: str) -> str:
 
 @mcp.resource("metrics://stack")
 def stack_description() -> str:
-    """Describe the insights-host monitoring scrape topology."""
+    """Describe expected scrape jobs for the built-in recipes."""
     return _j(
         {
-            "prometheus": os.getenv("PROMETHEUS_URL", "http://10.0.121.218:9090"),
-            "jobs": {
-                "node": "Proxmox host node_exporter :9100 (home-media, aitherios, sterianos, phidios)",
-                "proxmox-*": "PVE exporters on insights-host :9221-9224",
-                "truenas": "Graphite exporter metrics (scale_monitoring_*)",
-                "truenas-zfs": "zfsprom_* pool metrics on TrueNAS :9901",
+            "prometheus": os.getenv("PROMETHEUS_URL", "http://127.0.0.1:9090"),
+            "assumed_jobs": {
+                "node": "node_exporter (host OS metrics)",
+                "proxmox-*": "prometheus-pve-exporter (guest/node via PVE API)",
+                "truenas": "Graphite-style TrueNAS metrics (scale_monitoring_*)",
+                "truenas-zfs": "zfsprom_* pool metrics",
             },
-            "not_scraped": "Guest VM node_exporter / cAdvisor (by design)",
+            "note": "Recipes are optional conveniences; any PromQL works via query_* tools.",
         }
     )
 
@@ -520,13 +519,13 @@ def stack_description() -> str:
 
 @mcp.prompt()
 def investigate_incident(symptom: str = "high latency or resource pressure") -> str:
-    """Guided prompt for investigating a homelab metrics incident."""
+    """Guided prompt for investigating a metrics incident."""
     return (
-        f"Investigate this homelab symptom using the metrics-mcp tools: {symptom}\n"
+        f"Investigate this symptom using the metrics-mcp tools: {symptom}\n"
         "1) Call infra_overview and list_targets.\n"
         "2) Use suggest_queries for the symptom, then series_stats / detect_anomalies on the best queries.\n"
-        "3) If a Proxmox host looks bad, compare_hosts and top_guests.\n"
-        "4) If storage related, check zfs_alloc/zfs_free recipes and TrueNAS SMART temps.\n"
+        "3) If a host looks bad, compare_hosts and top_guests.\n"
+        "4) If storage related, check zfs_* recipes and SMART temp recipes.\n"
         "5) Summarize root cause hypotheses with supporting numbers."
     )
 
@@ -544,9 +543,9 @@ def capacity_review(horizon: str = "7d") -> str:
 
 @mcp.prompt()
 def explain_metric(metric_name: str) -> str:
-    """Prompt to explain a Prometheus metric in this lab's context."""
+    """Prompt to explain a Prometheus metric."""
     return (
-        f"Explain metric '{metric_name}' for this homelab. "
+        f"Explain metric '{metric_name}'. "
         "Use metric_info, then query_instant with a small example. "
         "Note which job/exporter produces it and how an agent should interpret spikes."
     )

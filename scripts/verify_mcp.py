@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Verify metrics-mcp Streamable HTTP against live Prometheus."""
+"""Verify metrics-mcp Streamable HTTP against a running Prometheus."""
 from __future__ import annotations
 
 import json
+import os
 import urllib.request
 
-URL = "http://127.0.0.1:8084/mcp"
+URL = os.environ.get("METRICS_MCP_URL", "http://127.0.0.1:8084/mcp")
 HEADERS = {
     "Content-Type": "application/json",
     "Accept": "application/json, text/event-stream",

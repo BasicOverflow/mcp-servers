@@ -8,10 +8,11 @@ services:
     environment:
       HOST: "0.0.0.0"
       PORT: "8000"
-      # Same LAN IP works from the container on this host
-      PROMETHEUS_URL: "${PROMETHEUS_URL:-http://10.0.121.218:9090}"
-      MCP_ALLOWED_HOSTS: "10.0.121.218,10.0.121.218:*,127.0.0.1,127.0.0.1:*,localhost,localhost:*"
-      MCP_ALLOWED_ORIGINS: "http://10.0.121.218:*,http://127.0.0.1:*,http://localhost:*"
+      PROMETHEUS_URL: "${PROMETHEUS_URL:-http://host.docker.internal:9090}"
+      MCP_ALLOWED_HOSTS: "${MCP_ALLOWED_HOSTS:-127.0.0.1,127.0.0.1:*,localhost,localhost:*}"
+      MCP_ALLOWED_ORIGINS: "${MCP_ALLOWED_ORIGINS:-http://127.0.0.1:*,http://localhost:*}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
       interval: 30s

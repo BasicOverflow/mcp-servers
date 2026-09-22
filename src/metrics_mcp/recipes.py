@@ -1,18 +1,18 @@
-"""Homelab-aware PromQL recipes matching the insights-host scrape set."""
+"""Built-in PromQL recipes for common node / PVE / ZFS exporters."""
 
 from __future__ import annotations
 
 RECIPES: dict[str, dict[str, str]] = {
     "node_cpu": {
-        "title": "Proxmox host CPU busy %",
+        "title": "Host CPU busy %",
         "query": '100 * (1 - avg by (host) (rate(node_cpu_seconds_total{job="node",mode="idle"}[5m])))',
     },
     "node_memory": {
-        "title": "Proxmox host memory used %",
+        "title": "Host memory used %",
         "query": '100 * (1 - node_memory_MemAvailable_bytes{job="node"} / node_memory_MemTotal_bytes{job="node"})',
     },
     "node_load": {
-        "title": "Proxmox host load1",
+        "title": "Host load1",
         "query": 'node_load1{job="node"}',
     },
     "node_disk": {

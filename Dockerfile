@@ -1,24 +1,16 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Copy requirements and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
 COPY src/ ./src/
-
-# Set Python path
-ENV PYTHONPATH=/app
-
-# Expose HTTP port
-EXPOSE 8000
-
-# Set default environment variables
+ENV PYTHONPATH=/app/src
 ENV HOST=0.0.0.0
 ENV PORT=8000
+ENV PROMETHEUS_URL=http://10.0.121.218:9090
 
-# Run MCP server
-CMD ["python", "-m", "src.mcp_server.server"]
+EXPOSE 8000
 
+CMD ["python", "-m", "metrics_mcp"]

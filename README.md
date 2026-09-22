@@ -1,237 +1,78 @@
-# mcp-servers
+# Metrics MCP
 
-Collection of Different MCPs for personal homelab use with LLM Agents.
+LLM-facing Model Context Protocol server for the homelab Prometheus stack on **insights-host**.
 
-## Repository Structure
+Implements **MCP Python SDK v2** (`mcp>=2.0`) with **Streamable HTTP** (stateless + JSON responses) per the current MCP transport model.
 
-This repository uses a branch-per-server approach:
-- **main branch**: Contains base structure, documentation, and skeleton files
-- **feature branches**: Each branch implements a specific MCP server (e.g., `notes-mcp`, `metrics-mcp`)
+## Endpoint
 
-## Notes MCP Server
+| | |
+|---|---|
+| Host | insights-host `10.0.121.218` |
+| URL | `http://10.0.121.218:8084/mcp` |
+| Prometheus | `http://10.0.121.218:9090` (env `PROMETHEUS_URL`) |
 
-The `notes_mcp` branch implements a complete MCP server for Obsidian vault file operations.
+## Tools
 
-### Features
+| Tool | Purpose |
+|------|---------|
+| `prometheus_health` | Ready/healthy check |
+| `list_targets` | Scrape target health |
+| `list_metrics` | Metric name catalog (prefix filter) |
+| `metric_info` | Metadata + sample series |
+| `label_values` | Values for a label |
+| `query_instant` / `query_range` | Raw PromQL |
+| `series_stats` | mean/min/max/p50/p95/p99 |
+| `detect_trend` | Linear trend / slope |
+| `detect_anomalies` | Z-score outliers |
+| `correlate_metrics` | Pearson correlation |
+| `capacity_forecast` | ETA to absolute threshold |
+| `suggest_queries` / `list_recipes` / `run_recipe` | Homelab-aware PromQL recipes |
+| `down_targets` | Targets that are down or errored |
+| `zfs_pool_summary` | Pool alloc/free/used% |
+| `infra_overview` | One-shot health snapshot |
+| `compare_hosts` | CPU/mem/load/disk across Proxmox nodes |
+| `top_guests` | Hottest QEMU/LXC by CPU or memory |
 
-**Core File Operations:**
-- `read_file` - Read file content (auto-handles .md extension)
-- `write_file` - Write/overwrite content (creates parent dirs)
-- `delete_file` - Delete file or directory
-- `move_file` - Move/rename file or directory
-- `copy_file` - Copy file or directory
-- `create_directory` - Create directory with parent creation
-- `list_directory` - List files/subdirs with metadata
+## Resources
 
-**Search Capabilities:**
-- `search_files` - Search by name/pattern (glob and regex)
-- `search_content` - Grep-like content search with context
+- `metrics://stack` — scrape topology notes
+- `metrics://recipes` — recipe index
+- `metrics://recipes/{id}` — single recipe
 
-**Batch Operations:**
-- `read_multiple_files` - Read multiple files at once
-- `write_multiple_files` - Write multiple files atomically
+## Prompts
 
-### Path Handling
+- `investigate_incident`
+- `capacity_review`
+- `explain_metric`
 
-All tools support:
-- Paths with or without `.md` extension (auto-normalized)
-- Relative paths from vault root
-- Absolute paths (validated to stay within vault)
-- Security validation (prevents directory traversal)
+## Local run
 
-### Configuration
-
-**Environment Variables:**
-- `VAULT_PATH` - Vault location (default: `/app/vault`)
-- `HOST` - HTTP server host (default: `0.0.0.0`)
-- `PORT` - HTTP server port (default: `8000`)
-
-### Deployment
-
-```bash
-docker-compose up -d
-```
-
-Or run locally:
-```bash
-python -m src.mcp_server.server
-```
-
-The server will be accessible at:
-- HTTP endpoint: `http://hostname:8000`
-- SSE endpoint: `http://hostname:8000/sse`
-- POST endpoint: `http://hostname:8000/mcp`
-- Health check: `http://hostname:8000/health`
-
-### Connecting Cursor to Remote Server
-
-Update `C:\Users\Peter\.cursor\mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "notes-mcp": {
-      "url": "http://your-server:8000/sse"
-    }
-  }
-}
-```
-
-Or for local testing with Docker:
-```json
-{
-  "mcpServers": {
-    "notes-mcp": {
-      "url": "http://localhost:8000/sse"
-    }
-  }
-}
-```
-
-### Deployment on insights-host
-
-1. Ensure vault is accessible at `/home/peter/syncthing/obsidian/`
-2. Build and deploy:
-```bash
-docker-compose up -d
-```
-
-3. Server will be accessible at `http://insights-host:8000/sse`
-
-The server is accessible via HTTP/SSE to:
-- k3s cluster services
-- Ray cluster
-- Cursor and other MCP-compatible tools
-- Any HTTP client that supports SSE
-
-### Usage Examples
-
-**Read a note:**
-```json
-{
-  "tool": "read_file",
-  "arguments": {
-    "path": "infrastructure/Proxmox-Cluster.md"
-  }
-}
-```
-
-**Search for files:**
-```json
-{
-  "tool": "search_files",
-  "arguments": {
-    "pattern": "*.md",
-    "path": "infrastructure"
-  }
-}
-```
-
-**Search content:**
-```json
-{
-  "tool": "search_content",
-  "arguments": {
-    "query": "Proxmox",
-    "context_lines": 3
-  }
-}
-```
-
-**Write multiple files:**
-```json
-{
-  "tool": "write_multiple_files",
-  "arguments": {
-    "files": {
-      "test/file1.md": "# Content 1",
-      "test/file2.md": "# Content 2"
-    }
-  }
-}
-```
-
-## Project Structure
-
-```
-mcp-servers/
-├── src/
-│   └── mcp_server/
-│       ├── __init__.py
-│       └── server.py          # Base MCP server skeleton
-├── Dockerfile                  # Docker image definition
-├── docker-compose.yml          # Docker Compose configuration
-├── requirements.txt            # Python dependencies
-└── README.md                   # This file
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.11+
-- Docker and Docker Compose (for containerized deployment)
-- MCP SDK (`pip install mcp`)
-
-### Local Development
-
-1. Install dependencies:
 ```bash
 pip install -r requirements.txt
+set PYTHONPATH=src
+set PROMETHEUS_URL=http://10.0.121.218:9090
+python -m metrics_mcp
 ```
 
-2. Run the server:
+## Docker (insights-host)
+
 ```bash
-python -m src.mcp_server.server
+docker compose up -d --build
 ```
 
-### Docker Deployment
+Maps host **8084** → container **8000**.
 
-1. Build and run with Docker Compose:
-```bash
-docker-compose up -d
+## Cursor / client config (example)
+
+```json
+{
+  "mcpServers": {
+    "metrics": {
+      "url": "http://10.0.121.218:8084/mcp"
+    }
+  }
+}
 ```
 
-2. Or build and run manually:
-```bash
-docker build -t mcp-server .
-docker run -it mcp-server
-```
-
-## Creating a New MCP Server
-
-1. Create a new branch from `main`:
-```bash
-git checkout -b feature/your-server-name
-```
-
-2. Extend the base server in `src/mcp_server/server.py`:
-   - Add your tools in `list_tools()`
-   - Implement tool handlers in `call_tool()`
-   - Add resources/prompts as needed
-
-3. Update `requirements.txt` with any additional dependencies
-
-4. Customize `docker-compose.yml` and `Dockerfile` if needed
-
-5. Update this README with server-specific documentation
-
-## Base Server Features
-
-The skeleton server includes:
-- Basic MCP server structure using the MCP SDK
-- Tool registration and handling
-- Docker containerization support
-- Docker Compose orchestration
-
-## Environment Variables
-
-Create a `.env` file (see `.env.example` for template):
-- `VAULT_PATH`: Path to data directory (default: `/app/data`)
-
-## Documentation
-
-See `docs/` directory for detailed documentation on:
-- MCP protocol overview
-- Server implementation patterns
-- Deployment guides
+(Exact client key names vary by host; use Streamable HTTP / remote MCP URL support.)

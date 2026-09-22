@@ -1,19 +1,18 @@
-# Notes MCP (showcase)
+# Notes MCP
 
-Slim Obsidian-vault MCP redesigned on **MCP Python SDK v2** (Streamable HTTP), matching the `metrics_mcp` branch style.
+Markdown vault MCP for LLM agents. Built with **MCP Python SDK v2** (Streamable HTTP).
 
-> **Not deployed.** Do not run this on insights-host. Notes MCP was removed from the lab; the vault lives on Syncthing/NFS and is used locally. This branch is a reference implementation only.
+Point it at any directory of notes with `VAULT_ROOT` (defaults to bundled `sample-vault/`).
 
-## Endpoint (local showcase only)
+## Endpoint
 
 | | |
 |---|---|
-| Default bind | `127.0.0.1:8000` |
-| MCP URL | `http://127.0.0.1:8000/mcp` |
+| MCP | `http://127.0.0.1:8000/mcp` |
 | Health | `http://127.0.0.1:8000/health` |
-| Vault | `VAULT_ROOT` or bundled `sample-vault/` |
+| Vault | env `VAULT_ROOT` or `sample-vault/` |
 
-## Tools (6)
+## Tools
 
 | Tool | Purpose |
 |------|---------|
@@ -23,8 +22,6 @@ Slim Obsidian-vault MCP redesigned on **MCP Python SDK v2** (Streamable HTTP), m
 | `write_note` | Write/overwrite (creates parents) |
 | `search_filename` | Glob match on filenames |
 | `search_content` | Substring search in `*.md` |
-
-Removed vs the old server: delete/move/copy/batch helpers, custom FastAPI/SSE shim, ansible deploy playbook.
 
 ## Resources
 
@@ -36,7 +33,7 @@ Removed vs the old server: delete/move/copy/batch helpers, custom FastAPI/SSE sh
 - `locate_and_summarize`  
 - `draft_update`  
 
-## Local run
+## Run
 
 ```bash
 pip install -r requirements.txt
@@ -45,8 +42,6 @@ set VAULT_ROOT=%CD%\sample-vault
 python -m notes_mcp
 ```
 
-Optional Docker (profile-gated so it will not start by accident):
-
 ```bash
-docker compose --profile showcase up --build
+docker compose up -d --build
 ```

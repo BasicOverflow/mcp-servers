@@ -1,6 +1,6 @@
 """Notes MCP server (MCP Python SDK v2 — Streamable HTTP).
 
-SHOWCASE ONLY — not deployed. Slim Obsidian-vault file tools for reference.
+Markdown vault file tools for LLM agents.
 """
 
 from __future__ import annotations
@@ -39,9 +39,8 @@ mcp = MCPServer(
     "notes-mcp",
     version=__version__,
     instructions=(
-        "SHOWCASE Notes MCP — Obsidian vault file access. "
-        "Not deployed in the homelab; prefer local vault / Syncthing. "
-        "Use list_directory / search_* before write_note."
+        "Markdown vault MCP. Use list_directory / search_* before write_note. "
+        "Paths are relative to VAULT_ROOT; .md is optional on note tools."
     ),
 )
 
@@ -56,7 +55,7 @@ def _err(msg: str) -> str:
 
 @mcp.custom_route("/health", methods=["GET"])
 async def health(_request: Request) -> Response:
-    return JSONResponse({"status": "ok", "service": "notes-mcp", "version": __version__, "showcase": True})
+    return JSONResponse({"status": "ok", "service": "notes-mcp", "version": __version__})
 
 
 # ----- Tools -----
@@ -74,8 +73,6 @@ async def vault_info() -> str:
                 "root": str(root),
                 "markdown_files": len(md),
                 "directories": len(dirs),
-                "showcase": True,
-                "note": "This server is a redesign showcase and is not deployed.",
             }
         )
     except Exception as e:
@@ -131,7 +128,7 @@ async def write_note(path: str, content: str) -> str:
 
 @mcp.tool()
 async def search_filename(pattern: str, limit: int = 50) -> str:
-    """Find notes whose filename matches a glob (e.g. '*Insights*', '**/TODO*.md')."""
+    """Find notes whose filename matches a glob (e.g. '*Ideas*', '**/TODO*.md')."""
     try:
         root = V.vault_root()
         matches = []
@@ -190,8 +187,6 @@ def vault_resource() -> str:
         return _j(
             {
                 "root": str(root),
-                "showcase": True,
-                "deployed": False,
                 "markdown_files": sum(1 for _ in root.rglob("*.md")),
             }
         )
@@ -201,9 +196,8 @@ def vault_resource() -> str:
 
 @mcp.resource("notes://note/{path}")
 def note_resource(path: str) -> str:
-    """Read a note as a resource (vault-relative path; use -- or / separators)."""
+    """Read a note as a resource (vault-relative path)."""
     try:
-        # URI templates often encode nested paths with extra segments; accept slashes
         cleaned = path.replace("--", "/")
         f = V.resolve_file(cleaned)
         return f.read_text(encoding="utf-8")
@@ -215,7 +209,7 @@ def note_resource(path: str) -> str:
 
 
 @mcp.prompt()
-def locate_and_summarize(topic: str = "insights-host monitoring") -> str:
+def locate_and_summarize(topic: str = "project status") -> str:
     """Find notes about a topic and summarize them."""
     return (
         f"Locate vault notes about: {topic}\n"

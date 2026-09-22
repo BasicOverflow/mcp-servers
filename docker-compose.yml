@@ -1,16 +1,15 @@
+# SHOWCASE ONLY — do not deploy to insights-host or any homelab VM.
 services:
-  notes-mcp-server:
+  notes-mcp:
     build: .
-    container_name: notes-mcp-server
-    user: "568:568"
+    container_name: notes-mcp-showcase
+    profiles: ["showcase"]
     ports:
       - "8083:8000"
-    volumes:
-      - /home/peter/syncthing/obsidian/Homelab:/app/vault:rw
     environment:
-      - VAULT_PATH=${VAULT_PATH:-/app/vault}
-      - HOST=${HOST:-0.0.0.0}
-      - PORT=${PORT:-8000}
-    restart: unless-stopped
-
-
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      VAULT_ROOT: /app/sample-vault
+      MCP_ALLOWED_HOSTS: "127.0.0.1,127.0.0.1:*,localhost,localhost:*"
+      MCP_ALLOWED_ORIGINS: "http://127.0.0.1:*,http://localhost:*"
+    # Intentionally not restarted / not started by default (compose profile).

@@ -1,24 +1,19 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Copy requirements and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
 COPY src/ ./src/
+COPY sample-vault/ ./sample-vault/
 
-# Set Python path
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/src
+ENV HOST=127.0.0.1
+ENV PORT=8000
+ENV VAULT_ROOT=/app/sample-vault
 
-# Expose HTTP port
 EXPOSE 8000
 
-# Set default environment variables
-ENV HOST=0.0.0.0
-ENV PORT=8000
-
-# Run MCP server
-CMD ["python", "-m", "src.mcp_server.server"]
-
+# Showcase image only — not used in the homelab.
+CMD ["python", "-m", "notes_mcp"]
